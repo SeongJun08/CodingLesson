@@ -10,7 +10,7 @@ private:
 public:
 	void SetHP(int hp)
 	{
-		// Áö¿ªº¯¼ö ¿ì¼±
+		// ÃÃ¶Â¿ÂªÂºÂ¯Â¼Ã¶ Â¿Ã¬Â¼Â±
 		mHP = hp;
 	}
 		
