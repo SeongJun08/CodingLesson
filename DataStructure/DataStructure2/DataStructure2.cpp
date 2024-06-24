@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 
 int main()
 {
@@ -39,7 +39,27 @@ int main()
         }
         else if (choose == dequeue)
         {
+            if (layer > 0)
+            {
+                layer--;
+                std::cout << "dequeue : " << queue[0] << std::endl;
+                std::cout << "----QUEUE----" << std::endl;
 
+                for (int i = 0; i < layer; i++)
+                {
+                    queue[i] = queue[i + 1];
+                    std::cout << queue[i] << "   ";
+                }
+                std::cout << std::endl;
+            }
+            else
+            {
+                std::cout << "QUEUE에 들어있는 원소가 없습니다" << std::endl;
+            }
+        }
+        else if (choose == shutdown)
+        {
+            return 0;
         }
 
     }
