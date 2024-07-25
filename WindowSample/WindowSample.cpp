@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <sstream>
 
 // 윈도우 API 코딩 스타일
 // 함수 : 파스칼 (단어의 시작을 대문자로)
@@ -52,7 +53,7 @@ int WINAPI WinMain(
 	wc.lpszClassName = MY_CLASS_NAME;		// long pointer to string zero-terminated
 	wc.hInstance = hInstance;				// 중요
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;	// Handle of BRush Background
+	wc.hbrBackground = (HBRUSH)COLOR_MENUTEXT;	// Handle of BRush Background
 	wc.lpfnWndProc = WindowProc;				// 중요 : Long Pointer to FunctoiN WiNDow PROCedure
 	wc.cbSize = sizeof(WNDCLASSEX);				// 중요 : Count of Bytes
 
@@ -94,9 +95,32 @@ int WINAPI WinMain(
 	}
 
 	// WM_QUIT이면 while이 종료
-	return msg.wParam;
+	return static_cast<int>(msg.wParam);
 }
 
+void OnPaint(HWND hWnd)
+{
+	PAINTSTRUCT ps{};
+	HDC hdc = BeginPaint(hWnd, &ps);
+
+	HBRUSH hatchBrush = CreateHatchBrush(HS_CROSS, RGB(255, 0, 0));
+	HBRUSH old = (HBRUSH)SelectObject(hdc, hatchBrush);
+	Rectangle(hdc, 0, 0, 100, 100);
+	DeleteObject(hatchBrush);
+	SelectObject(hdc, old);
+
+	HPEN bluePen = CreatePen(PS_DOT, 1, RGB(0, 0, 255));
+	HPEN oldPen = (HPEN)SelectObject(hdc, bluePen);
+
+	MoveToEx(hdc, 0, 110, nullptr);
+	LineTo(hdc, 100, 110);
+
+	DeleteObject(bluePen);
+	SelectObject(hdc, oldPen);
+
+
+	EndPaint(hWnd, &ps);
+}
 // 4. 윈도우 프로시져 정의
 LRESULT WindowProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
@@ -104,22 +128,45 @@ LRESULT WindowProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_LBUTTONDOWN:
 		{
-			int x{};
-			int y{};
+			//int x{};
+			//int y{};
 
-			// lParam : | 상위 16 bit Y | 하위 16 X |
-			x = lParam & 0xffff;
-			y = lParam >> 16;
+			//// lParam : | 상위 16 bit Y | 하위 16 X |
+			//x = lParam & 0xffff;
+			//y = lParam >> 16;
 
-			x = LOWORD(lParam);
-			y = HIWORD(lParam);
+			//x = LOWORD(lParam);
+			//y = HIWORD(lParam);
 
-			wchar_t buf[512];
-			wsprintf(buf, L"왼쪽 클릭 : %d, %d\n", x, y);
-			OutputDebugString(buf);
+			//wchar_t buf[512];
+			//wsprintf(buf, L"왼쪽 클릭 : %d, %d\n", x, y);
+			//OutputDebugString(buf);
+
+			HDC hdc{}; // Handle Of Device Context
+			hdc = GetDC(hWnd);
+
+			Rectangle(hdc, 0, 0, 100, 100);
+
+			ReleaseDC(hWnd, hdc);
+
 
 			break;
 		}
+
+		case WM_PAINT:
+		{
+			OnPaint(hWnd);
+
+		}
+			break;
+		/*case WM_ERASEBKGND: break;*/
+
+		case WM_KEYDOWN:
+			if (wParam == VK_SPACE)
+			{
+				OutputDebugString(L"스페이스바!\n");
+			}
+			break;
 
 		case WM_CLOSE:					// Window Message : CLOSE
 			DestroyWindow(hWnd);
