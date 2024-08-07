@@ -17,18 +17,18 @@ HRESULT D2DFramework::Init(HINSTANCE hInstance, LPCWSTR title, UINT width, UINT 
 
 void D2DFramework::Release()
 {
-	mpRenderTarget.Reset();
-	mpD2DFactory.Reset();
+	mspRenderTarget.Reset();
+	mspD2DFactory.Reset();
 }
 
 void D2DFramework::Render()
 {
 	// 3. 그리기
-	mpRenderTarget->BeginDraw();
+	mspRenderTarget->BeginDraw();
 
-	mpRenderTarget->Clear(D2D1::ColorF(0.0f, 0.2f, 0.4f, 1.0f));
+	mspRenderTarget->Clear(D2D1::ColorF(0.0f, 0.2f, 0.4f, 1.0f));
 
-	HRESULT hr = mpRenderTarget->EndDraw();
+	HRESULT hr = mspRenderTarget->EndDraw();
 	if (hr == D2DERR_RECREATE_TARGET)
 	{
 		CreateDeviceResources();
@@ -105,7 +105,7 @@ HRESULT D2DFramework::InitWindow(HINSTANCE hInstance, LPCWSTR title, UINT width,
 HRESULT D2DFramework::InitD2D()
 {
 	// 1. Factory 생성
-	HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, mpD2DFactory.GetAddressOf());
+	HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, mspD2DFactory.GetAddressOf());
 
 	/*if (FAILED(hr))
 	{
@@ -122,10 +122,10 @@ HRESULT D2DFramework::CreateDeviceResources()
 	// 2. 랜더타겟 생성
 	RECT wr;
 	GetClientRect(mHwnd, &wr);
-	HRESULT hr = mpD2DFactory->CreateHwndRenderTarget(
+	HRESULT hr = mspD2DFactory->CreateHwndRenderTarget(
 		D2D1::RenderTargetProperties(),
 		D2D1::HwndRenderTargetProperties(mHwnd, D2D1::SizeU(wr.right - wr.left, wr.bottom - wr.top)),
-		&mpRenderTarget
+		&mspRenderTarget
 	);
 	/*if (FAILED(hr))
 	{
