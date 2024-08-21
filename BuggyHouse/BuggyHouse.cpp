@@ -1,4 +1,5 @@
 #include "BuggyHouse.h"
+#include "Bug.h"
 
 HRESULT BuggyHouse::Init(HINSTANCE hInstance, LPCWSTR title, UINT width, UINT height)
 {
@@ -7,17 +8,10 @@ HRESULT BuggyHouse::Init(HINSTANCE hInstance, LPCWSTR title, UINT width, UINT he
 
 	mspBackground = std::make_unique<Actor>(this, L"Images/back1_1024.png");
 
-	float sx{}, sy{};
-	RECT rct;
-	GetClientRect(mHwnd, &rct);
-
 	for (int i = 0; i < 40; ++i)
 	{
-		sx = (float)(rand() % (rct.right - rct.left));
-		sy = (float)(rand() % (rct.bottom - rct.top));
-
 		mBugs.push_back(
-			std::make_shared<Actor>(this, L"Images/bug1_1.png", sx, sy)
+			std::make_shared<Bug>(this)
 		);
 	}
 	
@@ -42,23 +36,37 @@ void BuggyHouse::Render()
 	mspRenderTarget->BeginDraw();
 
 	mspRenderTarget->Clear(D2D1::ColorF(0.0f, 0.2f, 0.4f, 1.0f));
+	mspRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+
+	CheckBugs();
 
 	mspBackground->Draw();
+
 	for (auto &bug : mBugs)
 	{
-		auto pos = bug->Getposition();
-		pos.x += (float)(1 - rand() % 3);
-		pos.y += (float)(1 - rand() % 3);
-		bug->SetPosition(pos);
-
 		bug->Draw();
-
-
 	}
 
 	HRESULT hr = mspRenderTarget->EndDraw();
 	if (hr == D2DERR_RECREATE_TARGET)
 	{
 		CreateDeviceResources();
+	}
+}
+
+void BuggyHouse::CheckBugs()
+{
+	if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+	{
+		POINT pt;
+		GetCursorPos(&pt);
+		ScreenToClient(mHwnd, &pt);
+
+		//  erase-remove idiom
+		auto it = std::remove_if(mBugs.begin(), mBugs.end(),
+			[&](auto &bug) {return bug.get()->IsClicked(pt); }
+		);
+
+		mBugs.erase(it, mBugs.end());
 	}
 }
