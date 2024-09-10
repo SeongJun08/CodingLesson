@@ -35,6 +35,7 @@ void D3DFramework::Destroy()
 void D3DFramework::GameLoop()
 {
 	mTimer.Start();
+	mInput.Initialize();
 
 	MSG msg{};
 	while (true)
@@ -77,6 +78,47 @@ LRESULT D3DFramework::MessageHandle(HWND hwnd, UINT message, WPARAM wParam, LPAR
 	);*/
 	switch (message)
 	{
+		case WM_KEYDOWN:
+			mInput.SetKeyDown(static_cast<unsigned int>(wParam));
+			break;
+
+		case WM_KEYUP:
+			mInput.SetKeyUp(static_cast<unsigned int>(wParam));
+			break;
+
+		case WM_LBUTTONDOWN:
+			mInput.SetKeyDown(VK_LBUTTON);
+			break;
+
+		case WM_LBUTTONUP:
+			mInput.SetKeyUp(VK_LBUTTON);
+			break;
+
+		case WM_RBUTTONDOWN:
+			mInput.SetKeyDown(VK_RBUTTON);
+			break;
+
+		case WM_RBUTTONUP:
+			mInput.SetKeyUp(VK_RBUTTON);
+			break;
+
+		case WM_MOUSEMOVE:
+			mInput.SetCursorPosition(LOWORD(lParam), HIWORD(lParam));
+			break;
+
+		case WM_ACTIVATE:
+			if (LOWORD(wParam) == WA_INACTIVE)
+			{
+				mbPaused = true;
+				mTimer.Stop();
+			}
+			else
+			{
+				mbPaused = false;
+				mTimer.Resume();
+			}
+			break;
+
 		case WM_PAINT:
 			if (mResizing)
 			{
@@ -91,6 +133,8 @@ LRESULT D3DFramework::MessageHandle(HWND hwnd, UINT message, WPARAM wParam, LPAR
 			break;
 
 		case WM_ENTERSIZEMOVE:
+			mTimer.Stop();
+			mbPaused = true;
 			mResizing = true;
 			break;
 
@@ -102,11 +146,18 @@ LRESULT D3DFramework::MessageHandle(HWND hwnd, UINT message, WPARAM wParam, LPAR
 			{
 				if (wParam == SIZE_MINIMIZED)
 				{
+					if (!mbPaused)
+					{
+						mTimer.Stop();
+					}
+					mbPaused = true;
 					mMinimized = true;
 					mMaximized = false;
 				}
 				else if (wParam == SIZE_MAXIMIZED)
 				{
+					mTimer.Resume();
+					mbPaused = false;
 					mMaximized = true;
 					mMinimized = false;
 					OnResize();
@@ -115,11 +166,15 @@ LRESULT D3DFramework::MessageHandle(HWND hwnd, UINT message, WPARAM wParam, LPAR
 				{
 					if (mMinimized)
 					{
+						mTimer.Resume();
+						mbPaused = false;
 						mMinimized = false;
 						OnResize();
 					}
 					else if (mMaximized)
 					{
+						mTimer.Resume();
+						mbPaused = false;
 						mMaximized = false;
 						OnResize();
 					}
@@ -129,6 +184,8 @@ LRESULT D3DFramework::MessageHandle(HWND hwnd, UINT message, WPARAM wParam, LPAR
 					}
 					else
 					{
+						mTimer.Resume();
+						mbPaused = false;
 						OnResize();
 					}
 				}
@@ -136,6 +193,8 @@ LRESULT D3DFramework::MessageHandle(HWND hwnd, UINT message, WPARAM wParam, LPAR
 			break;
 
 		case WM_EXITSIZEMOVE:
+			mTimer.Resume();
+			mbPaused = false;
 			mResizing = false;
 			OnResize();
 			break;
@@ -189,6 +248,8 @@ void D3DFramework::InitWindow(HINSTANCE hInstance)
 
 	RECT wr{ 0,0,mScreenWidth, mScreenHeight };
 	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
+
+	mTitleText = TITLE_TEXT;
 
 	mHwnd = CreateWindowEx(
 		0,
@@ -248,12 +309,31 @@ void D3DFramework::InitD3D()
 		NULL,
 		mspDeviceContext.ReleaseAndGetAddressOf()
 	);
-
+	
 	OnResize();
 }
 
 void D3DFramework::CalculateFPS()
 {
+	static int frameCount{};
+	static float timeElapsed{};
+
+	frameCount++;
+
+	if (mTimer.TotalTime() - timeElapsed >= 1.0f)
+	{
+		float fps = static_cast<float>(frameCount);
+		float mspf = 1000.0f / fps;
+
+		std::wostringstream os;
+		os.precision(5);
+		os << mTitleText << L" - FPS: " << fps << ", Frame Time : " << mspf << "ms";
+
+		SetWindowText(mHwnd, os.str().c_str());
+
+		frameCount = 0;
+		timeElapsed += 1.0f;
+	}
 }
 
 void D3DFramework::OnResize()
