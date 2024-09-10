@@ -55,6 +55,64 @@ void TriangleSample::Destroy()
 	D3DFramework::Destroy();
 }
 
+void TriangleSample::Update(float delta)
+{
+	float fScale{1.0f};
+	if (mInput.IsKeyDown('Z'))
+	{
+		fScale = 0.5f;
+	}
+	else if (mInput.IsKeyDown('X'))
+	{
+		fScale = 2.0f;
+	}
+
+	if (mInput.IsKeyDown('Q'))
+	{
+		mRotationZ += DirectX::XM_PI * delta;
+	}
+	else if (mInput.IsKeyDown('E'))
+	{
+		mRotationZ -= DirectX::XM_PI * delta;
+	}
+
+	if (mInput.IsKeyDown('A'))
+	{
+		mX -= 1.0f * delta;
+	}
+	else if (mInput.IsKeyDown('D'))
+	{
+		mX += 1.0f * delta;
+	}
+
+	if (mInput.IsKeyDown('W'))
+	{
+		mY += 1.0f * delta;
+	}
+	else if (mInput.IsKeyDown('S'))
+	{
+		mY -= 1.0f * delta;
+	}
+
+	if (mInput.IsKeyDown('1'))
+	{
+		mTimer.SetScale(1.0f);
+	}
+	else if (mInput.IsKeyDown('2'))
+	{
+		mTimer.SetScale(2.0f);
+	}
+	else if (mInput.IsKeyDown('3'))
+	{
+		mTimer.SetScale(0.5f);
+	}
+
+	mWorld = DirectX::XMMatrixIdentity();
+	mWorld *= DirectX::XMMatrixScaling(fScale, fScale, 1.0f);
+	mWorld *= DirectX::XMMatrixRotationZ(mRotationZ);
+	mWorld *= DirectX::XMMatrixTranslation(mX, mY, 0.0f);
+}
+
 void TriangleSample::Render()
 {
 	UINT stride{sizeof(VERTEX)};
@@ -66,10 +124,23 @@ void TriangleSample::Render()
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
 	);
 
+	mspDeviceContext->VSSetConstantBuffers(0, 1, mspConstantBuffer.GetAddressOf());
 	mspDeviceContext->PSSetShaderResources(0, 1, mspTextureView.GetAddressOf());
 	mspDeviceContext->PSGetSamplers(0, 1, mspSamplerState.GetAddressOf());
 	mspDeviceContext->OMSetBlendState(mspBlendState.Get(), nullptr, 0xffffffff);
+
+	MatrixBuffer mb;
+	mb.world = DirectX::XMMatrixTranspose(mWorld); // 행 <-> 열 전치행렬
+	mspDeviceContext->UpdateSubresource(
+		mspConstantBuffer.Get(), 0, nullptr, &mb, 0, 0
+	);
+
 	mspDeviceContext->Draw(4, 0);
+
+	/*if (mInput.IsKeyDown(VK_SPACE))
+	{
+		MessageBox(mHwnd, L"Hello", L"SPACE", MB_OK);
+	}*/
 }
 
 void TriangleSample::InitTriangle()
@@ -142,6 +213,16 @@ void TriangleSample::InitTriangle()
 	blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 	mspDevice->CreateBlendState(&blend_desc, mspBlendState.ReleaseAndGetAddressOf());
+
+	bd = CD3D11_BUFFER_DESC(
+		sizeof(MatrixBuffer),
+		D3D11_BIND_CONSTANT_BUFFER,
+		D3D11_USAGE_DEFAULT
+	);
+	mspDevice->CreateBuffer(&bd, nullptr, mspConstantBuffer.ReleaseAndGetAddressOf());
+
+	mX = mY = 0.0f;
+	mRotationZ = 0.0f;
 
 }
 
